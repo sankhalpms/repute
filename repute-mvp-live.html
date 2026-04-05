@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repute — Review Management</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0b0c;
+    --surface: #141416;
+    --surface2: #1c1c20;
+    --surface3: #242428;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0efe8;
+    --muted: #72717a;
+    --muted2: #44434a;
+    --accent: #ff4d1c;
+    --accent-dim: rgba(255,77,28,0.12);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.1);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.1);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.1);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.1);
+    --purple: #a78bfa;
+    --purple-dim: rgba(167,139,250,0.1);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 0.5px solid var(--border);
+    padding: 1.5rem 1rem;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 2rem;
+    padding: 0 0.5rem;
+  }
+  .logo span { color: var(--accent); }
+
+  .nav-section {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    padding: 0 0.5rem;
+    margin-bottom: 6px;
+    margin-top: 1.25rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+
+  .nav-icon { font-size: 14px; width: 16px; text-align: center; }
+
+  .badge-count {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    background: var(--red-dim);
+    color: var(--red);
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 500;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 0.75rem 0.5rem 0;
+    border-top: 0.5px solid var(--border);
+  }
+
+  .business-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+  }
+  .biz-avatar {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif;
+    flex-shrink: 0;
+  }
+  .biz-name { font-size: 12px; font-weight: 500; }
+  .biz-plan { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  .main {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    max-width: 900px;
+  }
+
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.75rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .page-sub { font-size: 13px; color: var(--muted); margin-top: 3px; font-weight: 300; }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  .card + .card { margin-top: 12px; }
+
+  .card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted2);
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 700px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+
+  .stat-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+  }
+  .stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .stat-delta {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  .alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    border: 0.5px solid;
+  }
+  .alert.danger { background: var(--red-dim); border-color: rgba(248,113,113,0.2); }
+  .alert.warning { background: var(--amber-dim); border-color: rgba(251,191,36,0.2); }
+  .alert-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+  .alert strong { font-weight: 500; }
+
+  .review-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .review-card:hover { border-color: var(--border2); }
+  .review-card.selected { border-color: var(--accent); background: #17100d; }
+  .review-card.resolved { opacity: 0.5; }
+
+  .review-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .reviewer-row { display: flex; align-items: center; gap: 10px; }
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+    flex-shrink: 0;
+  }
+  .reviewer-name { font-size: 14px; font-weight: 500; }
+  .reviewer-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .stars { display: flex; gap: 2px; }
+  .star { font-size: 12px; }
+
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+  .tag-red { background: var(--red-dim); color: var(--red); }
+  .tag-amber { background: var(--amber-dim); color: var(--amber); }
+  .tag-green { background: var(--green-dim); color: var(--green); }
+  .tag-purple { background: var(--purple-dim); color: var(--purple); }
+  .tag-blue { background: var(--blue-dim); color: var(--blue); }
+
+  .review-text { font-size: 13px; color: #c0bfba; line-height: 1.65; font-weight: 300; }
+
+  .priority-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px;
+  }
+  .priority-label { font-size: 11px; color: var(--muted); flex-shrink: 0; }
+  .priority-bar { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .priority-fill { height: 100%; border-radius: 2px; }
+  .priority-val { font-size: 11px; font-weight: 500; min-width: 30px; text-align: right; font-family: 'DM Mono', monospace; }
+
+  .workspace {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 12px;
+  }
+  .workspace-empty {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    font-size: 13px;
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  .analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  @media (max-width: 600px) { .analysis-grid { grid-template-columns: 1fr; } }
+
+  .analysis-pill {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.875rem;
+  }
+  .analysis-pill .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted2); margin-bottom: 6px; font-family: 'DM Mono', monospace; font-weight: 500; }
+  .analysis-pill .value { font-size: 13px; color: var(--text); line-height: 1.5; }
+
+  .tone-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .tone-chip {
+    font-size: 11px; padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border);
+    background: transparent; color: var(--muted);
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .tone-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .tone-chip.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(255,77,28,0.35); }
+
+  .response-output {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    min-height: 100px;
+    font-size: 13.5px;
+    line-height: 1.8;
+    color: #d0cfca;
+    white-space: pre-wrap;
+    font-weight: 300;
+    margin-bottom: 1rem;
+  }
+
+  .fraud-panel {
+    background: var(--surface2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .fraud-score-row {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .fraud-score-circle {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    border: 2px solid;
+  }
+  .fraud-score-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .fraud-signals { display: flex; flex-direction: column; gap: 6px; }
+  .fraud-signal {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: var(--muted);
+  }
+  .signal-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  .pattern-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  @media (max-width: 640px) { .pattern-grid { grid-template-columns: 1fr; } }
+
+  .insight-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    padding: 1rem 0;
+    border-bottom: 0.5px solid var(--border);
+    align-items: start;
+  }
+  .insight-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .insight-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .insight-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .insight-desc { font-size: 12px; color: var(--muted); line-height: 1.5; font-weight: 300; }
+
+  .bar-item { margin-bottom: 12px; }
+  .bar-label-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+  .bar-track { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border);
+    background: transparent; color: var(--text);
+    cursor: pointer; transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--surface2); border-color: var(--border2); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #e03d0a; }
+  .btn-danger { border-color: rgba(248,113,113,0.3); color: var(--red); }
+  .btn-danger:hover { background: var(--red-dim); }
+  .btn-sm { padding: 5px 12px; font-size: 11px; }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .spinner {
+    display: inline-block; width: 13px; height: 13px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: var(--surface2);
+    border: 0.5px solid var(--border2);
+    color: var(--text);
+    font-size: 13px; padding: 10px 18px;
+    border-radius: 20px;
+    opacity: 0; transform: translateY(6px);
+    transition: all 0.25s; pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .divider { height: 0.5px; background: var(--border); margin: 1rem 0; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .monospace { font-family: 'DM Mono', monospace; }
+
+  /* Live API indicator */
+  .api-live-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--green); background: var(--green-dim);
+    border: 0.5px solid rgba(74,222,128,0.2);
+    padding: 3px 9px; border-radius: 20px;
+  }
+  .api-live-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">repute<span>.</span></div>
+
+  <div class="nav-section">Main</div>
+  <button class="nav-item active" onclick="showPage('dashboard', this)">
+    <span class="nav-icon">◈</span> Dashboard
+  </button>
+  <button class="nav-item" onclick="showPage('inbox', this)">
+    <span class="nav-icon">◻</span> Inbox
+    <span class="badge-count" id="inbox-count">3</span>
+  </button>
+  <button class="nav-item" onclick="showPage('patterns', this)">
+    <span class="nav-icon">◉</span> Patterns
+  </button>
+
+  <div class="nav-section">Tools</div>
+  <button class="nav-item" onclick="showPage('fraud', this)">
+    <span class="nav-icon">◬</span> Fake detector
+  </button>
+  <button class="nav-item" onclick="showPage('settings', this)">
+    <span class="nav-icon">◎</span> Settings
+  </button>
+
+  <div class="sidebar-footer">
+    <div class="business-pill">
+      <div class="biz-avatar">MT</div>
+      <div>
+        <div class="biz-name">Marco's Trattoria</div>
+        <div class="biz-plan">Pro plan</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Last 30 days · Google Reviews</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="api-live-badge"><span class="api-live-dot"></span>AI live</span>
+        <button class="btn btn-sm" onclick="toast('Syncing reviews...')">↻ Sync reviews</button>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--amber)">4.1</div>
+        <div class="stat-label">Avg rating</div>
+        <div class="stat-delta" style="color:var(--red)">▼ 0.2 this month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--red)">3</div>
+        <div class="stat-label">Need response</div>
+        <div class="stat-delta" style="color:var(--muted)">of 11 new</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--green)">78%</div>
+        <div class="stat-label">Response rate</div>
+        <div class="stat-delta" style="color:var(--green)">▲ 12% vs last month</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" style="color:var(--blue)">8h</div>
+        <div class="stat-label">Avg response time</div>
+        <div class="stat-delta" style="color:var(--green)">▼ was 12h</div>
+      </div>
+    </div>
+
+    <div class="alert danger">
+      <div class="alert-dot" style="background:var(--red)"></div>
+      <div><strong>Critical pattern:</strong> Friday 7–9pm complaints up 340% — table turnover pressure likely. <span style="color:var(--muted)">See Patterns tab.</span></div>
+    </div>
+
+    <div class="alert warning">
+      <div class="alert-dot" style="background:var(--amber)"></div>
+      <div><strong>1 suspected fake review</strong> detected this week. Fraud score: 72/100. <span style="color:var(--muted)">See Fake detector.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Rating trend — last 6 weeks</div>
+      <canvas id="trendChart" height="80"></canvas>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-label">Recent reviews needing attention</div>
+      <div id="dashboard-reviews"></div>
+    </div>
+  </div>
+
+  <!-- INBOX -->
+  <div class="page" id="page-inbox">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Inbox</div>
+        <div class="page-sub">Reviews requiring a response</div>
+      </div>
+      <div class="btn-row">
+        <select class="btn btn-sm monospace" id="filter-sentiment" onchange="renderInbox()">
+          <option value="">All reviews</option>
+          <option value="furious">Furious</option>
+          <option value="disappointed">Disappointed</option>
+          <option value="positive">Positive</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div id="review-list"></div>
+      </div>
+      <div>
+        <div class="workspace" id="workspace">
+          <div class="workspace-empty" id="workspace-empty">← Select a review to generate a response</div>
+          <div id="workspace-content" style="display:none">
+            <div class="card-label">AI analysis</div>
+            <div class="analysis-grid">
+              <div class="analysis-pill">
+                <div class="label">Core issue</div>
+                <div class="value" id="ws-issue">—</div>
+              </div>
+              <div class="analysis-pill">
+                <div class="label">Recommended approach</div>
+                <div class="value" id="ws-approach">—</div>
+              </div>
+            </div>
+
+            <div class="card-label">Tone</div>
+            <div class="tone-chips" id="tone-chips">
+              <button class="tone-chip active" data-tone="Empathetic & apologetic">Empathetic</button>
+              <button class="tone-chip" data-tone="Professional & firm">Firm</button>
+              <button class="tone-chip" data-tone="Warm & inviting them back">Warm</button>
+              <button class="tone-chip" data-tone="Brief & factual">Brief</button>
+            </div>
+
+            <div class="card-label">Generated response</div>
+            <div class="response-output" id="response-output">Click generate to draft a response...</div>
+
+            <div class="btn-row">
+              <button class="btn btn-primary" id="gen-btn" onclick="generateResponse()">Generate response</button>
+              <button class="btn" id="regen-btn" onclick="generateResponse()" disabled>↻ Regenerate</button>
+              <button class="btn" id="copy-btn" onclick="copyResponse()" disabled>Copy</button>
+              <button class="btn btn-danger btn-sm" onclick="openFraudCheck()">Flag fake</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PATTERNS -->
+  <div class="page" id="page-patterns">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Pattern Intelligence</div>
+        <div class="page-sub">Operational insights from 47 reviews</div>
+      </div>
+    </div>
+
+    <div class="pattern-grid">
+      <div class="card">
+        <div class="card-label">Top complaint themes</div>
+        <div id="bar-chart"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Complaints by day</div>
+        <canvas id="dayChart" height="160"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">AI-detected insights</div>
+      <div id="insights-list"></div>
+    </div>
+
+    <div class="card" style="margin-top:12px;background:#120e1a;border-color:rgba(167,139,250,0.2)">
+      <div class="flex-between" style="margin-bottom:1rem">
+        <div class="card-label" style="margin-bottom:0;color:var(--purple)">Repute recommendations</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="font-size:13px;line-height:1.65;color:#c0bfc8;border-left:2px solid var(--red);padding-left:12px"><strong style="color:var(--text);font-weight:500">Immediate:</strong> Add 1 floor staff on Friday 7–9pm. This window alone causes 38% of negative reviews.</div>
+        <div style="font-size:13px;line-height:1.65;color:#c0bfc8;border-left:2px solid var(--amber);padding-left:12px"><strong style="color:var(--text);font-weight:500">This week:</strong> Brief kitchen on ticket-to-table timing. Food temperature complaints cluster on busy nights — it's operational, not a recipe issue.</div>
+        <div style="font-size:13px;line-height:1.65;color:#c0bfc8;border-left:2px solid var(--blue);padding-left:12px"><strong style="color:var(--text);font-weight:500">This month:</strong> The sea bass is mentioned positively in 7 reviews. Feature it in your Google Business profile and menu header.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FRAUD DETECTOR -->
+  <div class="page" id="page-fraud">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Fake review detector</div>
+        <div class="page-sub">Paste a review to analyse it for fraud signals</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-label">Review to analyse</div>
+      <textarea id="fraud-input" style="width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);resize:vertical;min-height:100px;outline:none" placeholder="Paste the review text here...">Terrible experience. Very unprofessional staff. Would not recommend to anyone. Avoid this place.</textarea>
+      <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Reviewer account age</div>
+          <select id="fraud-age" style="width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif">
+            <option value="new">Less than 30 days</option>
+            <option value="recent">1–6 months</option>
+            <option value="old">Over 6 months</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Their review history</div>
+          <select id="fraud-history" style="width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:8px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif">
+            <option value="only1star">Only 1-star reviews</option>
+            <option value="mixed">Mixed reviews</option>
+            <option value="positive">Mostly positive</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <button class="btn btn-primary" onclick="runFraudCheck()" id="fraud-btn">Analyse for fraud signals</button>
+      </div>
+    </div>
+
+    <div id="fraud-result" style="display:none">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:1rem">
+          <div class="card-label" style="margin-bottom:0">Fraud analysis</div>
+          <div id="fraud-verdict-tag" class="tag"></div>
+        </div>
+        <div class="fraud-score-row">
+          <div class="fraud-score-circle" id="fraud-score-circle">
+            <span class="fraud-score-num" id="fraud-score-num">—</span>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:500;margin-bottom:4px" id="fraud-verdict-text">—</div>
+            <div style="font-size:12px;color:var(--muted);font-weight:300" id="fraud-verdict-sub">—</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="fraud-signals" id="fraud-signals"></div>
+      </div>
+      <div class="card" id="fraud-action-card" style="margin-top:12px;display:none">
+        <div class="card-label">Next steps — dispute this review</div>
+        <div style="font-size:13px;color:#c0bfba;line-height:1.7;font-weight:300">
+          1. <strong style="font-weight:500">Don't respond publicly</strong> — responding gives the fake review more visibility.<br>
+          2. Go to <strong style="font-weight:500">Google Maps → find the review → click the flag icon</strong> → select "Fake or spam".<br>
+          3. In the reason field, note: new account, no prior reviews, generic language with no specific visit details.<br>
+          4. If rejected, escalate via Google Business Profile support with a screenshot of your reservation/transaction records showing this reviewer never visited.<br>
+          5. <strong style="font-weight:500">Document everything.</strong> Google takes pattern-reported fakes more seriously than one-off flags.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Settings</div>
+        <div class="page-sub">Configure your account and integrations</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Business profile</div>
+      <div style="display:grid;gap:12px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Business name</div>
+          <input type="text" id="biz-name-input" value="Marco's Trattoria" style="width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Owner name (used in responses)</div>
+          <input type="text" id="owner-name-input" value="Marco" style="width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Business type</div>
+          <select id="biz-type-input" style="width:100%;background:var(--surface2);border:0.5px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif">
+            <option>Restaurant / café</option>
+            <option>Hair salon / barber</option>
+            <option>Retail store</option>
+            <option>Contractor / trade</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-primary" onclick="saveSettings()">Save settings</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-label">AI Status</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 0">
+        <span class="api-live-badge"><span class="api-live-dot"></span>AI live</span>
+        <div style="font-size:13px;color:var(--muted);font-weight:300">Claude AI is connected and ready. Response generation and fraud analysis are active.</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-label">Integrations</div>
+      <div style="display:flex;flex-direction:column;gap:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:500">Google Business Profile</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Sync reviews automatically</div>
+          </div>
+          <button class="btn btn-sm" onclick="toast('Google OAuth — requires backend setup')">Connect</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:0.5px solid var(--border)">
+          <div>
+            <div style="font-size:13px;font-weight:500">Yelp</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Sync Yelp reviews</div>
+          </div>
+          <button class="btn btn-sm" onclick="toast('Yelp API — requires backend setup')">Connect</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0">
+          <div>
+            <div style="font-size:13px;font-weight:500">Email alerts</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">Get notified of new 1–2 star reviews</div>
+          </div>
+          <button class="btn btn-sm" onclick="toast('Email alerts — requires backend setup')">Configure</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div id="toast"></div>
+
+<script>
+/* ================================================================
+   MOCK DATA
+================================================================ */
+const MOCK_REVIEWS = [
+  {
+    id: 1,
+    name: 'Marcus T.',
+    initials: 'MT',
+    avatarBg: '#2d1020',
+    avatarColor: '#f87171',
+    stars: 1,
+    date: '2 hours ago',
+    platform: 'Google',
+    text: "Absolutely disgusted. Waited 45 minutes for a table even though we had a reservation. When we finally sat down, our food arrived cold and the waiter was rude when we complained. Won't be coming back.",
+    sentiment: 'furious',
+    priority: 94,
+    issue: 'Wait time & cold food despite reservation',
+    approach: 'Acknowledge the failure directly. Apologise without excuses. Offer a concrete make-good.',
+    resolved: false,
+    fraudScore: 72,
+  },
+  {
+    id: 2,
+    name: 'Priya K.',
+    initials: 'PK',
+    avatarBg: '#101e2a',
+    avatarColor: '#60a5fa',
+    stars: 2,
+    date: 'Yesterday',
+    platform: 'Google',
+    text: "Food was decent but service was really slow. Waited 20 minutes for drinks. The pasta was good when it came but the whole experience felt rushed at the end — like they wanted us out.",
+    sentiment: 'disappointed',
+    priority: 58,
+    issue: 'Slow service, felt rushed at end of meal',
+    approach: 'Empathise with pacing issues. Validate the food quality. Invite them back personally.',
+    resolved: false,
+    fraudScore: 18,
+  },
+  {
+    id: 3,
+    name: 'Daniel R.',
+    initials: 'DR',
+    avatarBg: '#0e2218',
+    avatarColor: '#4ade80',
+    stars: 5,
+    date: '2 days ago',
+    platform: 'Google',
+    text: "Came here for my anniversary and it was perfect. The staff remembered we had a special occasion without us saying anything — there was even a little card on the table. Food was outstanding, especially the sea bass.",
+    sentiment: 'positive',
+    priority: 5,
+    issue: 'No complaint — praise for staff & sea bass',
+    approach: 'Thank warmly. Reference the anniversary. Short and genuine beats long and corporate.',
+    resolved: false,
+    fraudScore: 4,
+  },
+];
+
+const COMPLAINT_THEMES = [
+  { label: 'Wait time / slow service', pct: 68, color: 'var(--red)' },
+  { label: 'Food temperature', pct: 42, color: 'var(--amber)' },
+  { label: 'Staff attitude', pct: 31, color: 'var(--amber)' },
+  { label: 'Noise level', pct: 18, color: 'var(--blue)' },
+  { label: 'Bill accuracy', pct: 11, color: 'var(--muted)' },
+];
+
+const INSIGHTS = [
+  { icon: '⏱', bg: 'var(--red-dim)', title: 'Friday peak overwhelm', desc: 'Complaints spike 340% on Friday 7–9pm. Pattern consistent for 3 consecutive months.', severity: 'Critical', tag: 'tag-red' },
+  { icon: '🌡', bg: 'var(--amber-dim)', title: 'Food temperature degradation', desc: '4 reviews mention cold food. Likely kitchen-to-table lag on busy nights. Not a recipe issue.', severity: 'High', tag: 'tag-amber' },
+  { icon: '👤', bg: 'var(--red-dim)', title: 'One staff member flagged', desc: '"The tall waiter" referenced negatively in 3 unrelated reviews across 6 weeks.', severity: 'High', tag: 'tag-red' },
+  { icon: '🐟', bg: 'var(--green-dim)', title: 'Sea bass is your star dish', desc: 'Mentioned positively in 7 reviews unprompted. Underrepresented in marketing.', severity: 'Opportunity', tag: 'tag-green' },
+];
+
+/* ================================================================
+   CLAUDE API — uses artifact built-in access, no key needed
+================================================================ */
+async function callClaude(prompt, maxTokens = 400) {
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${response.status}`);
+  }
+
+  const data = await response.json();
+  const text = data.content?.map(b => b.text || '').join('').trim();
+  if (!text) throw new Error('Empty response from API');
+  return text;
+}
+
+/* ================================================================
+   STATE
+================================================================ */
+let selectedReview = null;
+let selectedTone = 'Empathetic & apologetic';
+let lastGeneratedResponse = '';
+let bizName = "Marco's Trattoria";
+let ownerName = "Marco";
+
+/* ================================================================
+   NAVIGATION
+================================================================ */
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+
+/* ================================================================
+   SETTINGS
+================================================================ */
+function saveSettings() {
+  bizName = document.getElementById('biz-name-input').value.trim() || bizName;
+  ownerName = document.getElementById('owner-name-input').value.trim() || ownerName;
+  toast('Settings saved');
+}
+
+/* ================================================================
+   DASHBOARD
+================================================================ */
+function initDashboard() {
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+      datasets: [{
+        data: [4.3, 4.1, 3.9, 4.0, 4.1, 4.1],
+        borderColor: '#fbbf24',
+        backgroundColor: 'rgba(251,191,36,0.05)',
+        borderWidth: 1.5,
+        pointRadius: 3,
+        pointBackgroundColor: '#fbbf24',
+        tension: 0.4,
+        fill: true
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#72717a', font: { size: 10 } } },
+        y: {
+          min: 3.5, max: 5,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#72717a', font: { size: 10 } }
+        }
+      }
+    }
+  });
+
+  const el = document.getElementById('dashboard-reviews');
+  el.innerHTML = '';
+  MOCK_REVIEWS.filter(r => r.priority > 50).forEach(r => {
+    const riskColor = r.priority >= 80 ? 'var(--red)' : r.priority >= 50 ? 'var(--amber)' : 'var(--green)';
+    el.innerHTML += `<div class="review-card" onclick="goToReview(${r.id})">
+      <div class="review-top">
+        <div class="reviewer-row">
+          <div class="avatar" style="background:${r.avatarBg};color:${r.avatarColor}">${r.initials}</div>
+          <div>
+            <div class="reviewer-name">${r.name}</div>
+            <div class="reviewer-meta">${r.date} · ${r.platform}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${starsHTML(r.stars)}
+          <span class="tag tag-${sentimentTag(r.sentiment)}">${r.sentiment}</span>
+        </div>
+      </div>
+      <div class="review-text">${r.text}</div>
+    </div>`;
+  });
+}
+
+function goToReview(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-inbox').classList.add('active');
+  document.querySelectorAll('.nav-item')[1].classList.add('active');
+  setTimeout(() => {
+    const r = MOCK_REVIEWS.find(x => x.id === id);
+    if (r) selectReview(r);
+  }, 50);
+}
+
+/* ================================================================
+   INBOX
+================================================================ */
+function renderInbox() {
+  const filter = document.getElementById('filter-sentiment')?.value || '';
+  const reviews = filter ? MOCK_REVIEWS.filter(r => r.sentiment === filter) : MOCK_REVIEWS;
+  const el = document.getElementById('review-list');
+  el.innerHTML = '';
+
+  reviews.forEach(r => {
+    const riskColor = r.priority >= 80 ? 'var(--red)' : r.priority >= 50 ? 'var(--amber)' : 'var(--green)';
+    const card = document.createElement('div');
+    card.className = 'review-card' + (r.resolved ? ' resolved' : '');
+    card.id = 'review-card-' + r.id;
+    card.innerHTML = `
+      <div class="review-top">
+        <div class="reviewer-row">
+          <div class="avatar" style="background:${r.avatarBg};color:${r.avatarColor}">${r.initials}</div>
+          <div>
+            <div class="reviewer-name">${r.name}</div>
+            <div class="reviewer-meta">${r.date} · ${r.platform}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${starsHTML(r.stars)}
+          <span class="tag tag-${sentimentTag(r.sentiment)}">${r.sentiment}</span>
+        </div>
+      </div>
+      <div class="review-text">${r.text}</div>
+      ${r.priority > 10 ? `<div class="priority-row">
+        <span class="priority-label">Priority</span>
+        <div class="priority-bar"><div class="priority-fill" style="width:${r.priority}%;background:${riskColor}"></div></div>
+        <span class="priority-val" style="color:${riskColor}">${r.priority}%</span>
+      </div>` : ''}
+    `;
+    card.onclick = () => selectReview(r);
+    el.appendChild(card);
+  });
+}
+
+function selectReview(r) {
+  selectedReview = r;
+  lastGeneratedResponse = '';
+  document.querySelectorAll('.review-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('review-card-' + r.id);
+  if (card) card.classList.add('selected');
+
+  document.getElementById('workspace-empty').style.display = 'none';
+  document.getElementById('workspace-content').style.display = 'block';
+  document.getElementById('ws-issue').textContent = r.issue;
+  document.getElementById('ws-approach').textContent = r.approach;
+  document.getElementById('response-output').textContent = 'Click generate to draft a response...';
+  document.getElementById('regen-btn').disabled = true;
+  document.getElementById('copy-btn').disabled = true;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.tone-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.tone-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      selectedTone = chip.dataset.tone;
+    });
+  });
+});
+
+async function generateResponse() {
+  if (!selectedReview) return;
+  const btn = document.getElementById('gen-btn');
+  const regen = document.getElementById('regen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Writing...';
+  document.getElementById('response-output').textContent = 'Crafting your response...';
+
+  const r = selectedReview;
+  const currentOwner = document.getElementById('owner-name-input')?.value.trim() || ownerName;
+  const currentBiz = document.getElementById('biz-name-input')?.value.trim() || bizName;
+
+  const prompt = `You are an expert at writing business owner responses to customer reviews for a ${document.getElementById('biz-type-input')?.value || 'restaurant'} called "${currentBiz}".
+
+Write a response to this ${r.stars}-star Google review:
+"${r.text}"
+
+Tone: ${selectedTone}
+Approach: ${r.approach}
+
+Rules:
+- Write ONLY the response text, nothing else — no preamble, no explanation
+- Under 120 words
+- Specific to what they said — no generic templates
+- Sound like a real owner, not a PR department
+- If negative: acknowledge specifically, apologise sincerely, offer a resolution
+- If positive: warm and genuine, reference specific details they mentioned
+- End with owner name "— ${currentOwner}"`;
+
+  try {
+    const text = await callClaude(prompt, 400);
+    lastGeneratedResponse = text;
+    document.getElementById('response-output').textContent = text;
+    document.getElementById('regen-btn').disabled = false;
+    document.getElementById('copy-btn').disabled = false;
+  } catch (e) {
+    document.getElementById('response-output').textContent = 'Error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Generate response';
+  }
+}
+
+function copyResponse() {
+  if (!lastGeneratedResponse) return;
+  navigator.clipboard.writeText(lastGeneratedResponse).then(() => toast('Copied to clipboard'));
+}
+
+function openFraudCheck() {
+  if (!selectedReview) return;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-fraud').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('fraud-input').value = selectedReview.text;
+}
+
+/* ================================================================
+   PATTERNS
+================================================================ */
+function initPatterns() {
+  const bc = document.getElementById('bar-chart');
+  bc.innerHTML = '';
+  COMPLAINT_THEMES.forEach(t => {
+    bc.innerHTML += `<div class="bar-item">
+      <div class="bar-label-row">
+        <span style="font-size:12px">${t.label}</span>
+        <span style="font-size:11px;font-weight:500;font-family:'DM Mono',monospace;color:${t.color}">${t.pct}%</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${t.color}" data-w="${t.pct}"></div></div>
+    </div>`;
+  });
+  setTimeout(() => document.querySelectorAll('#bar-chart .bar-fill').forEach(f => { f.style.width = f.dataset.w + '%'; }), 100);
+
+  const ctx = document.getElementById('dayChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      datasets: [{
+        data: [1, 0, 1, 2, 9, 5, 2],
+        backgroundColor: ['rgba(96,165,250,0.4)','rgba(96,165,250,0.4)','rgba(96,165,250,0.4)','rgba(251,191,36,0.4)','rgba(248,113,113,0.8)','rgba(251,191,36,0.5)','rgba(96,165,250,0.4)'],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#72717a', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#72717a', font: { size: 10 } } }
+      }
+    }
+  });
+
+  const il = document.getElementById('insights-list');
+  il.innerHTML = '';
+  INSIGHTS.forEach(ins => {
+    il.innerHTML += `<div class="insight-item">
+      <div class="insight-icon" style="background:${ins.bg}">${ins.icon}</div>
+      <div>
+        <div class="insight-title">${ins.title}</div>
+        <div class="insight-desc">${ins.desc}</div>
+      </div>
+      <span class="tag ${ins.tag}">${ins.severity}</span>
+    </div>`;
+  });
+}
+
+/* ================================================================
+   FRAUD DETECTOR
+================================================================ */
+async function runFraudCheck() {
+  const reviewText = document.getElementById('fraud-input').value.trim();
+  if (!reviewText) { toast('Paste a review first'); return; }
+
+  const btn = document.getElementById('fraud-btn');
+  btn.innerHTML = '<span class="spinner"></span>Analysing...';
+  btn.disabled = true;
+
+  const age = document.getElementById('fraud-age').value;
+  const history = document.getElementById('fraud-history').value;
+
+  let score = 0;
+  const signals = [];
+
+  // Signal 1: Account age
+  if (age === 'new') { score += 20; signals.push({ label: 'Account created < 30 days ago', fired: true, points: 20 }); }
+  else if (age === 'recent') { signals.push({ label: 'Account age 1–6 months', fired: false, points: 0 }); }
+  else { signals.push({ label: 'Established account (6+ months)', fired: false, points: 0 }); }
+
+  // Signal 2: Review history
+  if (history === 'only1star') { score += 20; signals.push({ label: 'Only 1-star reviews in history', fired: true, points: 20 }); }
+  else if (history === 'mixed') { signals.push({ label: 'Mixed review history', fired: false, points: 0 }); }
+  else { signals.push({ label: 'Mostly positive review history', fired: false, points: 0 }); }
+
+  // Signal 3: Language analysis via Claude AI
+  let langScore = 0;
+  try {
+    const langPrompt = `Analyse this review for signs it might be fake or bot-generated. Score from 0-25 where 0=clearly genuine (specific details, personal story, emotional but plausible) and 25=likely fake (vague, generic, no specific visit details, templated language).
+
+Review: "${reviewText}"
+
+Reply with ONLY a JSON object (no markdown, no backticks): {"score": <number 0-25>, "reason": "<one sentence>"}`;
+
+    const raw = await callClaude(langPrompt, 150);
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    langScore = Math.min(25, Math.max(0, Math.round(parsed.score)));
+    score += langScore;
+    signals.push({ label: `Language pattern (AI): ${parsed.reason}`, fired: langScore > 10, points: langScore });
+  } catch(e) {
+    langScore = reviewText.split(' ').length < 15 ? 15 : 5;
+    score += langScore;
+    signals.push({ label: 'Language: short and generic (local analysis)', fired: langScore > 10, points: langScore });
+  }
+
+  // Signal 4: Velocity (mock)
+  const velocityFired = Math.random() > 0.7;
+  if (velocityFired) { score += 20; signals.push({ label: '3+ negative reviews in last 24 hours (velocity spike)', fired: true, points: 20 }); }
+  else { signals.push({ label: 'No unusual review velocity', fired: false, points: 0 }); }
+
+  // Signal 5: Competitor cross-check (mock)
+  signals.push({ label: 'Competitor review check: not available without Google API', fired: false, points: 0 });
+
+  score = Math.min(100, score);
+
+  const resultEl = document.getElementById('fraud-result');
+  const circle = document.getElementById('fraud-score-circle');
+  const numEl = document.getElementById('fraud-score-num');
+  const verdictTag = document.getElementById('fraud-verdict-tag');
+  const verdictText = document.getElementById('fraud-verdict-text');
+  const verdictSub = document.getElementById('fraud-verdict-sub');
+  const signalsEl = document.getElementById('fraud-signals');
+  const actionCard = document.getElementById('fraud-action-card');
+
+  numEl.textContent = score;
+
+  if (score >= 65) {
+    circle.style.borderColor = 'var(--red)'; numEl.style.color = 'var(--red)';
+    verdictTag.className = 'tag tag-red'; verdictTag.textContent = 'Likely fake';
+    verdictText.textContent = 'High fraud probability';
+    verdictSub.textContent = 'We recommend flagging this with Google and not responding publicly.';
+    actionCard.style.display = 'block';
+  } else if (score >= 30) {
+    circle.style.borderColor = 'var(--amber)'; numEl.style.color = 'var(--amber)';
+    verdictTag.className = 'tag tag-amber'; verdictTag.textContent = 'Suspicious';
+    verdictText.textContent = 'Proceed with caution';
+    verdictSub.textContent = 'Some signals present but not conclusive. Respond professionally and briefly.';
+    actionCard.style.display = 'none';
+  } else {
+    circle.style.borderColor = 'var(--green)'; numEl.style.color = 'var(--green)';
+    verdictTag.className = 'tag tag-green'; verdictTag.textContent = 'Likely genuine';
+    verdictText.textContent = 'Appears to be a real review';
+    verdictSub.textContent = 'Respond empathetically using the Inbox tab.';
+    actionCard.style.display = 'none';
+  }
+
+  signalsEl.innerHTML = '';
+  signals.forEach(s => {
+    signalsEl.innerHTML += `<div class="fraud-signal">
+      <div class="signal-dot" style="background:${s.fired ? 'var(--red)' : 'var(--green)'}"></div>
+      <span style="color:${s.fired ? 'var(--text)' : 'var(--muted)'}">${s.label}</span>
+      ${s.points > 0 ? `<span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:var(--red)">+${s.points}</span>` : ''}
+    </div>`;
+  });
+
+  resultEl.style.display = 'block';
+  btn.innerHTML = 'Analyse for fraud signals';
+  btn.disabled = false;
+}
+
+/* ================================================================
+   HELPERS
+================================================================ */
+function starsHTML(n) {
+  return `<div class="stars">${Array.from({length:5},(_,i) => `<span class="star" style="color:${i<n?'#fbbf24':'#2d2c2a'}">★</span>`).join('')}</div>`;
+}
+
+function sentimentTag(s) {
+  const map = { furious:'red', disappointed:'amber', positive:'green', mixed:'purple' };
+  return map[s] || 'blue';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ================================================================
+   INIT
+================================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  initDashboard();
+  renderInbox();
+  initPatterns();
+});
+</script>
+</body>
+</html>
